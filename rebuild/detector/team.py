@@ -2,6 +2,10 @@ from PIL import Image
 import cv2
 from transformers import CLIPProcessor, CLIPModel
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 team_colors = {}
 player_team_dict = {}
 
@@ -58,7 +62,7 @@ def get_team_assignment(frames,player_tracks,team_1_class_name,team_2_class_name
             player_team_dict = {}
         
         for player_id, track in player_track.items():
-            team = get_player_team(frames[frame_num],track['bbox'],player_id,team_1_class_name,team_2_class_name)
+            team = get_player_team(frames[frame_num],track,player_id,team_1_class_name,team_2_class_name)
             player_assignment[frame_num][player_id] = team
 
     return player_assignment
