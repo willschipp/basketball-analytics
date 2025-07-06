@@ -1,18 +1,23 @@
 from ultralytics import YOLO
 import supervision as sv
 
+import gc
 import logging
 import os
 import psutil
+import torch
 
 logger = logging.getLogger(__name__)
 
-def detect_players(frames):
+def detect_players(frames,use_gpu=True):
     process = psutil.Process(os.getpid())
     ram_used = process.memory_info().rss / (1024 * 1024)     
     logger.info(f"RAM used before model load {round(ram_used, 2)} MB")
 
+    device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+
     model = YOLO('models/player_detector.pt')
+    model.to(device)
     tracker = sv.ByteTrack()
 
     ram_used = process.memory_info().rss / (1024 * 1024)     
@@ -53,6 +58,13 @@ def detect_players(frames):
                 tracks[idx][track_id] = bbox
     
     logger.info("done... returning")
+
+    # unload the model
+    gc.collect()
+
+    ram_used = process.memory_info().rss / (1024 * 1024)
+    logger.info(f"RAM used after model unloaded  {round(ram_used, 2)} MB")
+
 
     return tracks
 
