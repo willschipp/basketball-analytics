@@ -16,7 +16,10 @@ def detect_players(frames,use_gpu=True):
 
     device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
 
-    model = YOLO('models/player_detector.pt')
+    runtime_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(runtime_dir, '..','models', 'player_detector.pt')
+
+    model = YOLO(model_path)
     model.to(device)
     tracker = sv.ByteTrack()
 
@@ -52,7 +55,7 @@ def detect_players(frames,use_gpu=True):
             bbox = frame_detection[0].tolist()
             #detected id
             class_id = frame_detection[3]
-            track_id = frame_detection[4]
+            track_id = frame_detection[4] # this is the player id
             # validate that this is tracking a PLAYER
             if class_id == class_names_inverted['Player']:
                 tracks[idx][track_id] = bbox

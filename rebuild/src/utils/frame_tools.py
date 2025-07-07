@@ -21,7 +21,9 @@ def save_frames(video_path,frames_name):
             # dump the last of it
             pickle.dump(frames,f)
     cap.release()
-    
+
+def write_frame(frame,path):
+    cv2.imwrite(path, frame)
 
 def get_frames(pkl_path):
     frames = []

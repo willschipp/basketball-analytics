@@ -24,7 +24,11 @@ def detect_ball(frames,use_gpu=True):
     logger.info(f"RAM used before model load {round(ram_used, 2)} MB")
     # setup
     device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
-    model = YOLO('models/ball_detector_model.pt')
+
+    runtime_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(runtime_dir, '..', 'models', 'ball_detector_model.pt')
+
+    model = YOLO(model_path)
     model.to(device)
 
     ram_used = process.memory_info().rss / (1024 * 1024)     
@@ -197,7 +201,7 @@ def find_best_candidate_for_possession(ball_center,player_frame,ball_bbox):
 
 def detect_possession(player_tracks,ball_tracks):
     # init
-    global min_frames
+    global min_frames #TODO remove global
     num_frames = len(ball_tracks)
     position_list = [-1] * num_frames #create list
     consecutive_possession_count = {}
@@ -228,3 +232,45 @@ def detect_possession(player_tracks,ball_tracks):
             consecutive_possession_count = {}
     
     return position_list # final list
+
+def detect_passes(possession_list,teams_list):
+    passes = [-1] * len(possession_list)
+    prev_holder = -1
+    previous_frame = -1
+
+    for frame in range(1,len(possession_list)):
+        if possession_list[frame -1] != -1:
+            prev_holder = possession_list[frame - 1]
+            previous_frame = frame -1
+        
+        current_holder = possession_list[frame]
+
+        if prev_holder != -1 and current_holder != -1 and prev_holder != current_holder:
+            prev_team = teams_list[previous_frame].get(prev_holder, -1)
+            current_team = teams_list[frame].get(current_holder,-1)
+
+            if prev_team == current_team and prev_team != -1:
+                passes[frame] = prev_team
+    
+    return passes
+
+def detect_interceptions(possession_list,teams_list):
+    interceptions = [-1] * len(possession_list)
+    prev_holder = -1
+    previous_frame = -1
+
+    for frame in range(1,len(possession_list)):
+        if possession_list[frame -1] != -1:
+            prev_holder = possession_list[frame - 1]
+            previous_frame = frame -1
+        
+        current_holder = possession_list[frame]
+
+        if prev_holder != -1 and current_holder != -1 and prev_holder != current_holder:
+            prev_team = teams_list[previous_frame].get(prev_holder, -1)
+            current_team = teams_list[frame].get(current_holder,-1)
+
+            if prev_team != current_team and prev_team != -1 and current_team != -1:
+                interceptions[frame] = prev_team
+    
+    return interceptions

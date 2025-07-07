@@ -3,14 +3,22 @@ import cv2
 from transformers import CLIPProcessor, CLIPModel
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 team_colors = {}
 player_team_dict = {}
 
-model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
-processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
+runtime_dir = os.path.dirname(os.path.abspath(__file__))
+# local_model_dir = os.path.join(runtime_dir, "patrickjohncyh/fashion-clip")
+
+model_path = os.path.join(runtime_dir, '..', 'models', 'patrickjohncyh', 'fashion-clip')
+
+# model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
+model = CLIPModel.from_pretrained(model_path)
+# processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
+processor = CLIPProcessor.from_pretrained(model_path)
 
 
 def get_player_color(frame,bbox,team_1_class_name,team_2_class_name):
