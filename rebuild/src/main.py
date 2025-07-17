@@ -43,7 +43,7 @@ import tempfile
 import threading
 
 from logging_config import setup_logging
-from service.processor import process
+from service.processor import process, process_from_files, process_player_team
 from service.registry import save,get_by_id
 
 setup_logging()
@@ -79,7 +79,7 @@ def upload_video():
     return jsonify({'registrationId':registration_id}),200
     # return f'Saved {registration_id}',200
 
-@app.route('/<registration_id>',methods=['GET'])
+@app.route('/<registration_id>/status',methods=['GET'])
 def check_progress(registration_id):
     logger.info(f"registration id {registration_id}")
     registration = get_by_id(registration_id)
@@ -91,9 +91,19 @@ def check_progress(registration_id):
     #     return jsonify({'status':'still_processing'}),200
     # return jsonify({'status':'complete'}),200
 
+@app.route('/<registration_id>',methods=['GET'])
+def retrieve_player_teams(registration_id):
+    logger.info(f"registration id {registration_id}")
+    registration = get_by_id(registration_id)
+    if registration is None:
+        return jsonify({'status':'not_found'}),404
+    # get the player - to - team processing    
+    return process_player_team(registration_id)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0",port=5000)
+    # process_from_files()
 
 # if __name__ == "__main__":
 #     setup_logging()

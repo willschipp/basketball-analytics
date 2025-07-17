@@ -9,6 +9,8 @@ import pickle
 
 import logging
 
+import pandas as pd
+
 logger = logging.getLogger(__name__)
 
 team_1_class_name = "white shirt"
@@ -36,6 +38,61 @@ def process(video_location,registration_id,frame_location="./frames.pkl",track_l
     # possession list shows who had possession of the ball (player_id) in each frame
     passes = detect_passes(possession_list,team_tracks)
     interceptions = detect_interceptions(possession_list,team_tracks)
+    # write this data set to a dataframe
+    dataframe = pd.DataFrame(columns=['frame_num','player_ids'])
+
+def process_player_team(registration_id):
+    playerframe = pd.DataFrame(columns=['player_id','team_id'])
+    # player_tracks = get_list(f"./tracks.{registration_id}.pkl")
+    team_tracks = get_list(f"./teams.{registration_id}.pkl")
+    # loop and process
+    for frame_num,team_track in enumerate(team_tracks):
+        for tk,tv in team_track.items():
+            if tk not in playerframe['player_id'].values:
+                new_player = pd.DataFrame({'player_id':[tk],'team_id':[tv]})
+                playerframe = pd.concat([playerframe,new_player],ignore_index=True)
+    json_str = playerframe.to_json(orient='records',index=False)
+    return json_str
+
+
+
+def process_from_files():
+    dataframe = pd.DataFrame(columns=['frame_num','player_count','ball'])
+    playerframe = pd.DataFrame(columns=['player_id','team_id'])
+    player_tracks = get_list("./tracks.pkl")
+    ball_tracks = get_list("./ball.pkl")
+    team_tracks = get_list("./teams.pkl")
+
+    #frame by frame perspective
+    for frame_num,player in enumerate(player_tracks):
+        player_count = 0
+        ball_count = 0
+        ball_track = ball_tracks[frame_num] # same frame
+        for bk,vv in ball_track.items():
+            # print(f"frame_num = {frame_num} ball key={bk}, ball v = {vv}")
+            ball_count += 1
+        for k,v in player.items():
+            player_count += 1
+            # print(f"frame_num = {frame_num} key ={k}, value={v}")
+        # print(f"frame-num = {frame_num} item_count = {item_count}")
+        team_track = team_tracks[frame_num] # same frame
+        for tk,tv in team_track.items():
+            if tk not in playerframe['player_id'].values:
+                new_player = pd.DataFrame({'player_id':[tk],'team_id':[tv]})
+                playerframe = pd.concat([playerframe,new_player],ignore_index=True)
+
+        dataframe[len(dataframe)] = [frame_num,player_count,ball_count]
+
+    #player to team
+    json_str = playerframe.to_json(orient='records',index=False)
+    print(json_str)
+
+    possession_list = detect_possession(player_tracks,ball_tracks)
+    print(possession_list)
+    # for frame_num, possession in enumerate(possession_list):
+    #     print(f"possession {possession}")
+        # for k,v in possession.items():
+        #     print(f"frame-num {frame_num} k = {k} v = {v}")
 
     
 
@@ -67,3 +124,4 @@ def process_frames_for_ball_stream(frame_location,ball_location):
                 logger.info("written a batch")
             except EOFError:
                 break       
+
