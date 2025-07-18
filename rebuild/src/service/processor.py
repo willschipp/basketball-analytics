@@ -5,11 +5,12 @@ from utils.frame_tools import save_frames
 from utils.file_tools import get_list
 from service.registry import update_status
 
-import pickle
-
 import logging
-
 import pandas as pd
+import pickle
+import threading
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,23 +22,30 @@ def process(video_location,registration_id,frame_location="./frames.pkl",track_l
     update_status(registration_id,"getting frames")
     save_frames(video_location,frame_location)
     logging.info("done")
-    logging.info("starting to process frames to player tracks")
-    update_status(registration_id,"getting players")
-    process_frames_to_tracks_stream(frame_location,track_location,teams_location)
-    logging.info("done")
-    logging.info("starting to process frames to ball tracks")
-    update_status(registration_id,"getting possessions")
-    process_frames_for_ball_stream(frame_location,ball_location)
-    logging.info("done")
+    # now start processing the players and ball tracks in parallel
+    player_thread = threading.Thread(target=process_frames_to_tracks_stream,args=(registration_id,frame_location,track_location,teams_location,))
+    ball_thread = threading.Thread(target=process_frames_for_ball_stream,args=(registration_id,frame_location,ball_location,))
+
+    player_thread.start()
+    ball_thread.start()
+
+    # logging.info("starting to process frames to player tracks")
+    # update_status(registration_id,"getting players")
+    # process_frames_to_tracks_stream(frame_location,track_location,teams_location)
+    # logging.info("done")
+    # logging.info("starting to process frames to ball tracks")
+    # update_status(registration_id,"getting possessions")
+    # process_frames_for_ball_stream(frame_location,ball_location)
+    # logging.info("done")
     # now we have the ball track and player tracks, get the stats together
-    player_tracks = get_list(track_location)
-    ball_tracks = get_list(ball_location)
-    team_tracks = get_list(teams_location)
-    # get teams
-    possession_list = detect_possession(player_tracks,ball_tracks)
+    # player_tracks = get_list(track_location)
+    # ball_tracks = get_list(ball_location)
+    # team_tracks = get_list(teams_location)
+    # # get teams
+    # possession_list = detect_possession(player_tracks,ball_tracks)
     # possession list shows who had possession of the ball (player_id) in each frame
-    passes = detect_passes(possession_list,team_tracks)
-    interceptions = detect_interceptions(possession_list,team_tracks)
+    # passes = detect_passes(possession_list,team_tracks)
+    # interceptions = detect_interceptions(possession_list,team_tracks)
 
 def process_player_team(registration_id):
     playerframe = pd.DataFrame(columns=['player_id','team_id'])
@@ -93,7 +101,9 @@ def process_from_files():
     
 
 
-def process_frames_to_tracks_stream(frame_location,track_location,teams_location):
+def process_frames_to_tracks_stream(registration_id,frame_location,track_location,teams_location):
+    logging.info("starting to process frames to player tracks...")
+    update_status(registration_id,"getting players")
     with open(frame_location,'rb') as frames_in, open(track_location,'wb') as tracks_out, open(teams_location,'wb') as teams_out:
         while True:
             try:
@@ -106,8 +116,12 @@ def process_frames_to_tracks_stream(frame_location,track_location,teams_location
                 logger.info("written a batch")
             except EOFError:
                 break
+    logging.info("...complete player tracks")
+    update_status(registration_id,"complete tracks and teams")
 
-def process_frames_for_ball_stream(frame_location,ball_location):
+def process_frames_for_ball_stream(registration_id,frame_location,ball_location):
+    logging.info("starting to process frames to ball tracks...")
+    update_status(registration_id,"getting ball")
     with open(frame_location,'rb') as frames_in, open(ball_location,'wb') as tracks_out:
         while True:
             try:
@@ -119,5 +133,7 @@ def process_frames_for_ball_stream(frame_location,ball_location):
                 pickle.dump(balls,tracks_out)
                 logger.info("written a batch")
             except EOFError:
-                break       
+                break      
+    logging.info("...complete ball tracks")
+    update_status(registration_id,"complete ball")
 

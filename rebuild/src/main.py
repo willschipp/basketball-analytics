@@ -71,8 +71,12 @@ def upload_video():
 
     # register
     registration_id = save(filename)
+    frame_location = f"./frame.{registration_id}.pkl"
+    track_location = f"./tracks.{registration_id}.pkl"
+    teams_location = f"./teams.{registration_id}.pkl"
+    ball_location = f"./ball.{registration_id}.pkl"
     # process
-    thread = threading.Thread(target=process,args=(temp_path,registration_id,))
+    thread = threading.Thread(target=process,args=(temp_path,registration_id,frame_location,track_location,ball_location,teams_location,))
     thread.daemon = True
     thread.start()
 
