@@ -1,5 +1,4 @@
 import cv2
-import os
 import pickle
 
 def save_frames(video_path,frames_name):

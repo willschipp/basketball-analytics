@@ -38,8 +38,6 @@ def process(video_location,registration_id,frame_location="./frames.pkl",track_l
     # possession list shows who had possession of the ball (player_id) in each frame
     passes = detect_passes(possession_list,team_tracks)
     interceptions = detect_interceptions(possession_list,team_tracks)
-    # write this data set to a dataframe
-    dataframe = pd.DataFrame(columns=['frame_num','player_ids'])
 
 def process_player_team(registration_id):
     playerframe = pd.DataFrame(columns=['player_id','team_id'])
@@ -53,8 +51,6 @@ def process_player_team(registration_id):
                 playerframe = pd.concat([playerframe,new_player],ignore_index=True)
     json_str = playerframe.to_json(orient='records',index=False)
     return json_str
-
-
 
 def process_from_files():
     dataframe = pd.DataFrame(columns=['frame_num','player_count','ball'])
