@@ -1,7 +1,7 @@
 from detector.ball import detect_ball, remove_wrong_detections, refine, detect_possession, detect_passes, detect_interceptions
 from detector.players import detect_players
 from detector.team import get_team_assignment
-from utils.frame_tools import save_frames
+from utils.frame_tools import save_frames, convert_to_frames
 from utils.file_tools import get_list
 from service.registry import update_status
 
@@ -20,11 +20,15 @@ team_2_class_name = "dark blue shirt"
 def process(video_location,registration_id,frame_location="./frames.pkl",track_location="./tracks.pkl",ball_location="./ball.pkl",teams_location="./teams.pkl"):
     logging.info("starting to process video to frames")
     update_status(registration_id,"getting frames")
-    save_frames(video_location,frame_location)
+    # save_frames(video_location,frame_location)
+    # don't save frames, just retrieve them
+    frames = convert_to_frames(video_location)
     logging.info("done")
     # now start processing the players and ball tracks in parallel
-    player_thread = threading.Thread(target=process_frames_to_tracks_stream,args=(registration_id,frame_location,track_location,teams_location,))
-    ball_thread = threading.Thread(target=process_frames_for_ball_stream,args=(registration_id,frame_location,ball_location,))
+    # player_thread = threading.Thread(target=process_frames_to_tracks_stream,args=(registration_id,frame_location,track_location,teams_location,))
+    player_thread = threading.Thread(target=process_frames_array_to_tracks_stream,args=(registration_id,frames,track_location,teams_location,))
+    # ball_thread = threading.Thread(target=process_frames_for_ball_stream,args=(registration_id,frame_location,ball_location,))
+    ball_thread = threading.Thread(target=process_frames_array_to_ball_stream,args=(registration_id,frames,ball_location,))
 
     player_thread.start()
     ball_thread.start()
@@ -98,9 +102,23 @@ def process_from_files():
         # for k,v in possession.items():
         #     print(f"frame-num {frame_num} k = {k} v = {v}")
 
-    
+# process from an array
+def process_frames_array_to_tracks_stream(registration_id,frames,track_location,teams_location,batch_size=20):
+    logging.info("starting to process frames to player tracks...")
+    update_status(registration_id,"getting players")
+    with open(track_location,'wb') as tracks_out, open(teams_location,'wb') as teams_out:
+        for i in range(0,len(frames),batch_size):
+            batch = frames[i:i + batch_size]
+            logger.info("loading a batch: frames to tracks")
+            tracks = detect_players(batch)
+            pickle.dump(tracks,tracks_out)
+            assignments = get_team_assignment(batch,tracks,team_1_class_name,team_2_class_name)
+            pickle.dump(assignments,teams_out)
+            logger.info("written a batch")
+    logging.info("...complete player tracks")
+    update_status(registration_id,"complete tracks and teams")    
 
-
+# process from a pickle file
 def process_frames_to_tracks_stream(registration_id,frame_location,track_location,teams_location):
     logging.info("starting to process frames to player tracks...")
     update_status(registration_id,"getting players")
@@ -119,6 +137,23 @@ def process_frames_to_tracks_stream(registration_id,frame_location,track_locatio
     logging.info("...complete player tracks")
     update_status(registration_id,"complete tracks and teams")
 
+# process from an array
+def process_frames_array_to_ball_stream(registration_id,frames,ball_location,batch_size=20):
+    logging.info("starting to process frames to ball tracks...")
+    update_status(registration_id,"getting players")
+    with open(ball_location,'wb') as tracks_out:
+        for i in range(0,len(frames),batch_size):
+            batch = frames[i:i + batch_size]
+            logger.info("loading a batch: ball location")
+            balls = detect_ball(frames)
+            balls = remove_wrong_detections(balls)
+            # balls = refine(balls) TODO fix
+            pickle.dump(balls,tracks_out)
+            logger.info("written a batch")
+    logging.info("...complete ball tracks")
+    update_status(registration_id,"complete ball")  
+
+# process from a pickle file
 def process_frames_for_ball_stream(registration_id,frame_location,ball_location):
     logging.info("starting to process frames to ball tracks...")
     update_status(registration_id,"getting ball")

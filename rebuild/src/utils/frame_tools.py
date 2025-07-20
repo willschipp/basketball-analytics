@@ -21,6 +21,19 @@ def save_frames(video_path,frames_name):
             pickle.dump(frames,f)
     cap.release()
 
+def convert_to_frames(video_path):
+    frames = []
+    cap = cv2.VideoCapture(video_path)
+    frame_num = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)    
+    cap.release()
+    return frames        
+
+
 def write_frame(frame,path):
     cv2.imwrite(path, frame)
 

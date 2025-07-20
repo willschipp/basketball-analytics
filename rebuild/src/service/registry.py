@@ -1,6 +1,8 @@
 import logging
 import uuid
 
+from utils.file_tools import get_registration_ids
+
 logger = logging.getLogger(__name__)
 
 movie_register = []
@@ -10,6 +12,19 @@ movie_register = []
 # 'getting frames'
 # 'getting players'
 # 'getting possessions'
+
+def load():
+    # load up any existing registrations
+    ids = get_registration_ids()
+    for id in ids:
+        movie_registration = {
+            'registration_id': id,
+            'file_location': "",
+            'status':'complete'
+        }        
+        movie_register.append(movie_registration)
+        logger.info(f"added {id}")
+
 
 def save(file_name):
     registration_uuid = uuid.uuid4()
@@ -24,7 +39,9 @@ def save(file_name):
     return str(registration_uuid)
 
 def get_by_id(registration_id):
-    logger.debug(registration_id)
+    logger.info(registration_id)
+    if len(movie_register) <= 0:
+        load() # just in case
     for _,movie_registration in enumerate(movie_register):
         if movie_registration['registration_id'] == registration_id:
             return movie_registration
