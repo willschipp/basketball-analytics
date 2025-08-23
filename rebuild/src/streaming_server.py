@@ -18,12 +18,12 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
+# SSL config
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+ssl_context.load_cert_chain(certfile='./certs/selfsigned.crt', keyfile='./certs/selfsigned.key')
+
 
 class VideoTransformTrack(MediaStreamTrack):
-    """
-    A video stream track that transforms frames from an another track.
-    """
-
     kind = "video"
 
     def __init__(self, track, transform):
@@ -35,7 +35,7 @@ class VideoTransformTrack(MediaStreamTrack):
         frame = await self.track.recv()
 
         # extract the frame to send for processing
-        img = frame.to_ndarray(format="bgr24")
+        # img = frame.to_ndarray(format="bgr24")
 
         return frame # without transformations
 
@@ -65,10 +65,10 @@ async def offer(request):
 
     log_info("Created for %s", request.remote)
 
-    # prepare local media
-    # player = MediaPlayer(os.path.join(ROOT, "client/static/demo-instruct.wav"))
-    # create the file path
-    output_location = f"./recordings/{params["video_id"]}.mp4"
+    recordings_dir = "./recordings"
+    os.makedirs(recordings_dir, exist_ok=True)
+
+    output_location = os.path.join(recordings_dir, f"{params['video_id']}.mp4")
     # if args.record_to:
     recorder = MediaRecorder(output_location)
     # else:
@@ -96,18 +96,22 @@ async def offer(request):
             # pc.addTrack(player.audio)
             recorder.addTrack(track)
         elif track.kind == "video":
-            pc.addTrack(
-                VideoTransformTrack(
-                    relay.subscribe(track), transform=params["video_transform"]
-                )
+            transformed_track = VideoTransformTrack(
+                relay.subscribe(track), transform=params.get("video_transform")
             )
-            # if args.record_to:
-            recorder.addTrack(relay.subscribe(track))
+            pc.addTrack(transformed_track)  # add transformed track to pc
+            recorder.addTrack(transformed_track)  # record the transformed track only
 
         @track.on("ended")
         async def on_ended():
             log_info("Track %s ended", track.kind)
-            await recorder.stop()
+            try:
+                await asyncio.sleep(0.1)  # small delay to allow packets to flush
+                await recorder.stop()
+                log_info("Recorder stopped cleanly")
+                # send the video for parsing
+            except Exception as e:
+                logger.error("Exception during recorder.stop(): %s", e)
 
     # handle offer
     await pc.setRemoteDescription(offer)
@@ -153,17 +157,18 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    if args.cert_file:
-        ssl_context = ssl.SSLContext()
-        ssl_context.load_cert_chain(args.cert_file, args.key_file)
-    else:
-        ssl_context = None
+    # if args.cert_file:
+    # ssl_context = ssl.SSLContext()
+    # ssl_context.load_cert_chain(args.cert_file, args.key_file)
+    # else:
+    #     ssl_context = None
 
     app = web.Application()
     app.on_shutdown.append(on_shutdown)
     app.router.add_get("/", index)
     app.router.add_get("/static/client.js", javascript)
     app.router.add_post("/offer", offer)
+    # app, access_log=None, host=args.host, port=args.port, ssl_context=ssl_context
     web.run_app(
-        app, access_log=None, host=args.host, port=args.port, ssl_context=ssl_context
+        app, access_log=None, host="0.0.0.0", port=443, ssl_context=ssl_context
     )

@@ -6,3 +6,5 @@ __pycache__
 *.safetensors
 *.jpg
 .DS_Store
+*.crt
+*.key
