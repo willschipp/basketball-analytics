@@ -12,11 +12,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0;
-  display: flex;
+
+html, body, #root {
+  margin: 0 auto;
   place-items: center;
-  min-width: 320px;
+  min-width: 80vw;
   min-height: 100vh;
   color: #d6ccca; 
   background-color: #0d1f35;  

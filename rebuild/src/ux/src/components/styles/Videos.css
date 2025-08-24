@@ -1,0 +1,4 @@
+table.table {
+  color: #d6ccca;
+  background-color: #0d1f35 !important; /* ensures override of Bootstrap */
+}

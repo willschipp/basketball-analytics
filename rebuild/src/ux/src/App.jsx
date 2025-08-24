@@ -1,79 +1,60 @@
 import React, { useState } from 'react'
-import 'bootstrap/dist/css/bootstrap.min.css'
-// import './scss/styles.scss'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 
-function App() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+import Footer from './components/Footer';
+import Home from './components/Home';
+import LoginForm from './components/LoginForm';
+import Logout from './components/Logout';
+import Navigation from './components/Navigation';
+import Streamer from './components/Streamer';
+import Videos from './components/Videos';
 
-  const handleLogin = (e) => {
-    e.preventDefault()
-    // Simple validation example
-    if (!email) {
-      setError("Email is required")
-      return
-    }
-    if (!password) {
-      setError("Password is required")
-      return
-    }
-    setError("")
-    // Place your login logic here
-    alert(`Logging in with\nEmail: ${email}\nPassword: ${password}`)
+// ProtectedRoute component to wrap protected routes
+const ProtectedRoute = ({ children }) => {
+  const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+  if (!isLoggedIn) {
+    // Redirect to login if not logged in
+    return <Navigate to="/login" replace />;
   }
+  return (
+    <>
+      <Navigation/>
+      {children}
+    </>);
+};
+
+function App() {
 
   return (
-    <div className="d-flex vh-100 justify-content-center align-items-center">
-      <div className="card shadow" style={{ width: "320px" }}>
-        <div className="card-body">
-          <h2 className="text-center mb-4">Login</h2>
-          <form onSubmit={handleLogin}>
-            {/* Email Field */}
-            <div className="mb-3">
-              <label htmlFor="email-input" className="form-label">
-                Email <span className="text-danger">(required)</span>
-              </label>
-              <input
-                id="email-input"
-                type="email"
-                className={`form-control ${error.includes("Email") ? "is-invalid" : ""}`}
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              {error.includes("Email") && (
-                <div className="invalid-feedback">{error}</div>
-              )}
-            </div>
+    <Router>  
 
-            {/* Password Field */}
-            <div className="mb-3">
-              <label htmlFor="password-input" className="form-label">
-                Password <span className="text-danger">(required)</span>
-              </label>
-              <input
-                id="password-input"
-                type="password"
-                className={`form-control ${error.includes("Password") ? "is-invalid" : ""}`}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {error.includes("Password") && (
-                <div className="invalid-feedback">{error}</div>
-              )}
-            </div>
+      <Routes>
+        <Route path="/" element={
+            <ProtectedRoute>              
+              <Home />
+            </ProtectedRoute>
+          } />
+        
+        <Route path="/startStream" element={
+            <ProtectedRoute>
+              <Streamer/>
+            </ProtectedRoute>
+        } />
 
-            {/* Login Button */}
-            <button type="submit" className="btn btn-outline-secondary w-100">
-              Log in
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+        <Route path="/videos" element={
+            <ProtectedRoute>
+              <Videos/>
+            </ProtectedRoute>
+        } />        
+        
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/logout" element={<Logout />} />        
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+
+      <Footer />
+    </Router>
   )
 }
 

@@ -1,0 +1,24 @@
+nav.navbar.bg-light {
+  color: #d6ccca;
+  background-color: #0d1f35 !important; /* ensures override of Bootstrap */
+  width: 100%;
+}
+/* 
+nav.navbar.bg-light .navbar-brand img {
+  height: 50px;
+} */
+
+/* 
+nav.navbar.bg-light .navbar-nav button {
+  background: transparent;
+  border: 1px solid #d6ccca;
+  color: #d6ccca;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+nav.navbar.bg-light .navbar-nav button:hover {
+  background: #d6ccca;
+  color: #0d1f35;
+} */

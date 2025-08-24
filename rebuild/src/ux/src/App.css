@@ -1,11 +1,20 @@
-#root {
+/* #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
-}
+  text-align: center;  
+} */
 
 .card-body {
   color: #d6ccca;
   background-color: #0d1f35;
+}
+
+.card-subtitle {
+  color: #d6ccca;
+  background-color: #0d1f35;
+}
+
+.btn-outline-secondary {
+  color: #d6ccca;
 }
