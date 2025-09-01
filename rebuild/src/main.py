@@ -1,8 +1,11 @@
+import asyncio
 import logging
 import os
+import ssl
 import tempfile
-import asyncio
 import threading
+import uuid
+
 from aiohttp import web
 from aiohttp.web import Response, json_response
 from werkzeug.utils import secure_filename
@@ -12,12 +15,18 @@ from service.processor import process, process_from_files, process_player_team
 from service.registry import save, get_by_id, load
 from service.videos import create_videos_app  # if videos_bp is Flask blueprint, will need refactor
 
+from streaming_server import create_stream_server
+
 setup_logging()
 
 logger = logging.getLogger(__name__)
 
 # load existing registrations
 load()
+
+# SSL config
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+ssl_context.load_cert_chain(certfile='./certs/selfsigned.crt', keyfile='./certs/selfsigned.key')
 
 # --- Routes ---
 
@@ -112,8 +121,11 @@ def create_app():
     # Mount videos sub-app
     app.add_subapp('/api/v1/videos', create_videos_app())
 
+    # add the streaming server
+    app.add_subapp('/api/v1/stream',create_stream_server())
+
     return app
 
 
 if __name__ == '__main__':
-    web.run_app(create_app(), host="0.0.0.0", port=5000)
+    web.run_app(create_app(), host="0.0.0.0", port=8443, ssl_context=ssl_context)

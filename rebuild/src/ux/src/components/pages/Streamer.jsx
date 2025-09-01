@@ -30,10 +30,12 @@ function Streamer() {
         
         // connect audio / video
         pc.addEventListener('track', (evt) => {
-            if (evt.track.kind == 'video')
+            console.log("have a track...");
+            if (evt.track.kind == 'video') {
                 document.getElementById('video').srcObject = evt.streams[0];
-            else
+            } else {
                 document.getElementById('audio').srcObject = evt.streams[0];
+            }
         });
 
         return pc;
@@ -62,7 +64,7 @@ function Streamer() {
 
             var video_id = crypto.randomUUID();
 
-            return fetch('/offer', {
+            return fetch('/api/v1/stream/offer', {
                 body: JSON.stringify({
                     sdp: offer.sdp,
                     type: offer.type,
@@ -127,7 +129,6 @@ function Streamer() {
         // }
 
         // Build media constraints.
-
         const constraints = {
             audio: false,
             video: false
@@ -140,14 +141,9 @@ function Streamer() {
         const videoConstraints = {};
 
         constraints.video = Object.keys(videoConstraints).length ? videoConstraints : true;
-        // }
 
         // Acquire media and start negociation.
-
         if (constraints.audio || constraints.video) {
-            // if (constraints.video) {
-            //     document.getElementById('media').style.display = 'block';
-            // }
             navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
                 stream.getTracks().forEach((track) => {
                     pc.addTrack(track, stream);
@@ -199,7 +195,7 @@ function Streamer() {
                     <div className="col-md-12 d-flex flex-column">
                         <h4>Stream</h4>
                         <audio id="audio"></audio>
-                        <video id="video" playsInline={true}></video>
+                        <video id="video" autoPlay={true} playsInline={true} style={{maxHeight: '400px'}}/>
                         <button id="start" className="btn btn-lg btn-outline-secondary w-100" style={{ backgroundColor: "#f15e22", color: "white", borderColor: "#f15e22" }} onClick={start}>Start</button>
                         <button id="stop" className="btn btn-lg btn-outline-secondary w-100" style={{ backgroundColor: "red", color: "white", borderColor: "red", display: "none" }} onClick={stop}>Stop</button>
                     </div>

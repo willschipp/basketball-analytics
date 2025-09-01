@@ -42,14 +42,14 @@ class VideoTransformTrack(MediaStreamTrack):
 
 
 # define endpoints
-# async def index(request):
-#     content = open(os.path.join(ROOT, "client/index.html"), "r").read()
-#     return web.Response(content_type="text/html", text=content)
+async def index(request):
+    content = open(os.path.join(ROOT, "client/index.html"), "r").read()
+    return web.Response(content_type="text/html", text=content)
 
-# # client endpoint
-# async def javascript(request):
-#     content = open(os.path.join(ROOT, "client/static/client.js"), "r").read()
-#     return web.Response(content_type="application/javascript", text=content)
+# client endpoint
+async def javascript(request):
+    content = open(os.path.join(ROOT, "client/static/client.js"), "r").read()
+    return web.Response(content_type="application/javascript", text=content)
 
 
 async def offer(request):
@@ -135,13 +135,6 @@ async def on_shutdown(app):
     await asyncio.gather(*coros)
     pcs.clear()
 
-def create_stream_server():
-    app = web.Application()
-    app.on_shutdown.append(on_shutdown)
-    app.router.add_post("/offer", offer)
-    return app
-
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -172,8 +165,8 @@ if __name__ == "__main__":
 
     app = web.Application()
     app.on_shutdown.append(on_shutdown)
-    # app.router.add_get("/", index)
-    # app.router.add_get("/static/client.js", javascript)
+    app.router.add_get("/", index)
+    app.router.add_get("/static/client.js", javascript)
     app.router.add_post("/offer", offer)
     # app, access_log=None, host=args.host, port=args.port, ssl_context=ssl_context
     web.run_app(
