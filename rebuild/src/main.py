@@ -1,5 +1,5 @@
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, Blueprint
 from werkzeug.utils import secure_filename
 import logging
 import os
@@ -9,6 +9,7 @@ import threading
 from logging_config import setup_logging
 from service.processor import process, process_from_files, process_player_team
 from service.registry import save, get_by_id, load
+from service.videos import videos_bp
 
 setup_logging()
 
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 # load the registrations
 load()
+
+app.register_blueprint(videos_bp)
 
 @app.route('/upload',methods=['POST'])
 def upload_video():
@@ -77,6 +80,15 @@ def retrieve_player_teams(registration_id):
 def retrieve_player_picture(registration_id,player_id):
     logger.info(f" registration {registration_id} player id {player_id}")
     # look up the array and get the image
+
+# serving the UX
+@app.route('/', methods=['GET'])
+def serve_index():
+    return send_from_directory('./ux/dist', 'index.html')
+
+@app.route('/<path:path>', methods=['GET'])
+def serve_static(path):
+    return send_from_directory('./ux/dist', path)
 
 if __name__ == "__main__":
     # start the app
