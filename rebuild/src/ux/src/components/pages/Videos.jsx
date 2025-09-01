@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 import '../styles/Videos.css';
 
+import UploadForm from '../form/UploadForm';
+
 const VIDEO_URL = '/api/v1/videos';
 
 
@@ -22,22 +24,22 @@ function Videos() {
 
     const navigate = useNavigate();
 
-    useEffect(() => {
+    const loadVideos = () => {
         fetch(VIDEO_URL)
             .then((res) => res.json())
             .then((data) => {
                 setVideos(data);
                 setLoading(false);
             });
+    }
+
+    useEffect(() => {
+        loadVideos();
     },[]);
 
     const handleNavigateVideo = (videoId) => {
         //pass the location
         navigate('/videos/viewer', {state: { videoId: videoId }});
-    }
-
-    const handelUpload = (e) => {
-        e.preventDefault();//stop from doing anything first
     }
 
     if (loading) {
@@ -56,13 +58,7 @@ function Videos() {
                         ))}
                     </div>
                     <div className="col-md-6 d-flex flex-column gap-3">
-                        <div className="card p-3">
-                            <h4>Upload Game</h4>
-                            <div class="input-group mb-3">
-                                <input type="file" class="form-control" aria-label="Upload game video"/>
-                                <button class="btn btn-outline-secondary" type="button" id="upload-button" onClick={handelUpload} style={{ backgroundColor: "#f15e22", color: "white", borderColor: "#f15e22" }}>Upload</button>
-                            </div>
-                        </div>
+                        <UploadForm refreshFunction={loadVideos}/>
                     </div>
                 </div>
             </div>

@@ -1,8 +1,15 @@
-import { version } from '../../../package.json';
-
-{/* <div className="d-flex vh-100 justify-content-center align-items-center"></div> */}
+import { useNavigate } from 'react-router-dom';
 
 function Home() {
+
+    const navigate = useNavigate();
+
+    const handleUpload = (e) => {
+        e.preventDefault()
+        navigate('/videos');
+    }
+
+
     return (
         <div className="container-fluid d-flex justify-content-center align-items-center h-100 w-100 bg-white text-primary-dark" style={{ color: "#162948" }}>
             <div className="row w-100 h-100 mt-4">
@@ -10,7 +17,7 @@ function Home() {
                 <div className="col-md-6 d-flex flex-column gap-3">
                     {/* <!-- row 1 --> */}
                     <div className="card p-3 text-center">
-                        <button className="btn btn-lg btn-outline-secondary w-100" style={{ backgroundColor: "#f15e22", color: "white", borderColor: "#f15e22" }}>
+                        <button className="btn btn-lg btn-outline-secondary w-100" onClick={handleUpload} style={{ backgroundColor: "#f15e22", color: "white", borderColor: "#f15e22" }}>
                             Upload New Video
                         </button>
                     </div>
