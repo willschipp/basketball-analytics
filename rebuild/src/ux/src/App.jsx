@@ -4,10 +4,10 @@ import './App.css'
 import Footer from './components/layout/Footer';
 import Home from './components/pages/Home';
 import LoginForm from './components/form/LoginForm';
-import Logout from './components/form/Logout';
 import Navigation from './components/layout/Navigation';
 import Streamer from './components/pages/Streamer';
 import Videos from './components/pages/Videos';
+import VideoViewer from './components/pages/VideoViewer';
 
 const ProtectedRoute = ({ children }) => {
   const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
@@ -48,7 +48,13 @@ function App() {
             <ProtectedRoute>
               <Videos/>
             </ProtectedRoute>
-        } />        
+        } />
+
+        <Route path="/videos/viewer" element={
+            <ProtectedRoute>
+              <VideoViewer/>
+            </ProtectedRoute>
+        } />                
         
         <Route path="/login" element={<LoginForm />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

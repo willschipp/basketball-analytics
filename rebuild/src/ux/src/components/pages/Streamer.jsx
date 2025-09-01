@@ -194,12 +194,17 @@ function Streamer() {
 
     return (
         <>
-            <h4>Stream</h4>
-            <button id="start" className="btn btn-sm btn-outline-secondary" onClick={start}>Start</button>
-            <button id="stop" className="btn btn-sm btn-outline-secondary" style={{display: "none"}} onClick={stop}>Stop</button>
-
-            <audio id="audio"></audio>
-            <video id="video" playsInline={true}></video>
+            <div className="container-fluid d-flex justify-content-center align-items-center h-100 w-100 bg-white text-primary-dark" style={{ color: "#162948" }}>
+                <div className="row w-100 h-100">
+                    <div className="col-md-12 d-flex flex-column">
+                        <h4>Stream</h4>
+                        <audio id="audio"></audio>
+                        <video id="video" playsInline={true}></video>
+                        <button id="start" className="btn btn-lg btn-outline-secondary w-100" style={{ backgroundColor: "#f15e22", color: "white", borderColor: "#f15e22" }} onClick={start}>Start</button>
+                        <button id="stop" className="btn btn-lg btn-outline-secondary w-100" style={{ backgroundColor: "red", color: "white", borderColor: "red", display: "none" }} onClick={stop}>Stop</button>
+                    </div>
+                </div>
+            </div>
         </>
     );
 }
