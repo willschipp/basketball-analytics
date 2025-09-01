@@ -1,44 +1,47 @@
-
-from flask import Flask, request, jsonify, send_from_directory, Blueprint
-from werkzeug.utils import secure_filename
 import logging
 import os
 import tempfile
+import asyncio
 import threading
+from aiohttp import web
+from aiohttp.web import Response, json_response
+from werkzeug.utils import secure_filename
 
 from logging_config import setup_logging
 from service.processor import process, process_from_files, process_player_team
 from service.registry import save, get_by_id, load
-from service.videos import videos_bp
+from service.videos import create_videos_app  # if videos_bp is Flask blueprint, will need refactor
 
 setup_logging()
 
-
-app = Flask(__name__)
-app.logger.handlers = logging.getLogger().handlers
-app.logger.setLevel(logging.INFO)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 # 100MB
-
-# setup logging
 logger = logging.getLogger(__name__)
 
-# load the registrations
+# load existing registrations
 load()
 
-app.register_blueprint(videos_bp)
+# --- Routes ---
 
-@app.route('/upload',methods=['POST'])
-def upload_video():
-    if 'file' not in request.files:
-        return 'No file part', 400
-    file = request.files['file'] # get the video
-    if file.filename == '':
-        return 'No selected file',400
-    # create a file name
-    filename = secure_filename(file.filename)
-    # save
-    with tempfile.NamedTemporaryFile(delete=False,suffix=os.path.splitext(filename)[1]) as temp_file:
-        file.save(temp_file)
+async def upload_video(request: web.Request) -> web.Response:
+    reader = await request.multipart()
+    field = await reader.next()
+    if not field or field.name != 'file':
+        return web.Response(text='No file part', status=400)
+
+    filename = field.filename
+    if not filename:
+        return web.Response(text="No selected file", status=400)
+
+    filename = secure_filename(filename)
+    suffix = os.path.splitext(filename)[1]
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        size = 0
+        while True:
+            chunk = await field.read_chunk()  # async chunk read
+            if not chunk:
+                break
+            temp_file.write(chunk)
+            size += len(chunk)
         temp_path = temp_file.name
 
     # register
@@ -47,52 +50,70 @@ def upload_video():
     track_location = f"./tracks.{registration_id}.pkl"
     teams_location = f"./teams.{registration_id}.pkl"
     ball_location = f"./ball.{registration_id}.pkl"
-    # process
-    thread = threading.Thread(target=process,args=(temp_path,registration_id,frame_location,track_location,ball_location,teams_location,))
-    thread.daemon = True
+
+    # process in background thread
+    def _process():
+        process(temp_path, registration_id, frame_location, track_location, ball_location, teams_location)
+    thread = threading.Thread(target=_process, daemon=True)
     thread.start()
 
-    return jsonify({'registrationId':registration_id}),200
-    # return f'Saved {registration_id}',200
+    return json_response({'registrationId': registration_id})
 
-@app.route('/<registration_id>/status',methods=['GET'])
-def check_progress(registration_id):
+
+async def check_progress(request: web.Request) -> web.Response:
+    registration_id = request.match_info['registration_id']
     logger.info(f"registration id {registration_id}")
     registration = get_by_id(registration_id)
     if registration is None:
-        return jsonify({'status':'not_found'}),404
-    # need to check the status
-    return jsonify({'status':registration['status']}),200
-    # if is_running:
-    #     return jsonify({'status':'still_processing'}),200
-    # return jsonify({'status':'complete'}),200
+        return json_response({'status': 'not_found'}, status=404)
+    return json_response({'status': registration['status']})
 
-@app.route('/<registration_id>',methods=['GET'])
-def retrieve_player_teams(registration_id):
+
+async def retrieve_player_teams(request: web.Request) -> web.Response:
+    registration_id = request.match_info['registration_id']
     logger.info(f"registration id {registration_id}")
     registration = get_by_id(registration_id)
     if registration is None:
-        return jsonify({'status':'not_found'}),404
-    # get the player - to - team processing    
-    return process_player_team(registration_id)
+        return json_response({'status': 'not_found'}, status=404)
+    return await process_player_team(registration_id) \
+           if asyncio.iscoroutinefunction(process_player_team) \
+           else process_player_team(registration_id)
 
-@app.route('/<registration_id>/player/<player_id>',methods=['GET'])
-def retrieve_player_picture(registration_id,player_id):
+
+async def retrieve_player_picture(request: web.Request) -> web.Response:
+    registration_id = request.match_info['registration_id']
+    player_id = request.match_info['player_id']
     logger.info(f" registration {registration_id} player id {player_id}")
-    # look up the array and get the image
+    # TODO: implement logic returning web.FileResponse or binary Response
+    return web.Response(text="Not implemented", status=501)
 
-# serving the UX
-@app.route('/', methods=['GET'])
-def serve_index():
-    return send_from_directory('./ux/dist', 'index.html')
 
-@app.route('/<path:path>', methods=['GET'])
-def serve_static(path):
-    return send_from_directory('./ux/dist', path)
+async def serve_index(request: web.Request) -> web.Response:
+    return web.FileResponse('./ux/dist/index.html')
 
-if __name__ == "__main__":
-    # start the app
-    app.run(host="0.0.0.0",port=5000)
 
-    
+async def serve_static(request: web.Request) -> web.Response:
+    path = request.match_info['path']
+    return web.FileResponse(f'./ux/dist/{path}')
 
+
+# --- Setup App ---
+
+def create_app():
+    app = web.Application(client_max_size=100 * 1024 ** 2)  # 100MB limit
+
+    app.router.add_post('/upload', upload_video)
+    app.router.add_get('/{registration_id}/status', check_progress)
+    app.router.add_get('/{registration_id}', retrieve_player_teams)
+    app.router.add_get('/{registration_id}/player/{player_id}', retrieve_player_picture)
+    app.router.add_get('/', serve_index)
+    app.router.add_get('/{path:.*}', serve_static)
+
+    # Mount videos sub-app
+    app.add_subapp('/api/v1/videos', create_videos_app())
+
+    return app
+
+
+if __name__ == '__main__':
+    web.run_app(create_app(), host="0.0.0.0", port=5000)

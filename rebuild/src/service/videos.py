@@ -1,34 +1,46 @@
-from flask import Blueprint, jsonify
+from aiohttp import web
 from datetime import datetime
 
-videos_bp = Blueprint('videos', __name__, url_prefix='/api/v1/videos')
+routes = web.RouteTableDef()
 
-@videos_bp.route('/', methods=['GET'])
-def list_videos():
+@routes.get('')
+async def list_videos(request: web.Request):
     # Example response to list videos
-    current_date = datetime.now()
+    current_date = datetime.now().isoformat()
     videos = [
-      {
-        "id": 1,
-        "title": "Video 1",
-        "url": "/video-1",
-        "timestamp": current_date,
-      },
-      {
-        "id": 2,
-        "title": "Video 2",
-        "url": "/video-2",
-        "timestamp": current_date,
-      },
+        {
+            "id": 1,
+            "title": "Video 1",
+            "url": "/video-1",
+            "timestamp": current_date,
+        },
+        {
+            "id": 2,
+            "title": "Video 2",
+            "url": "/video-2",
+            "timestamp": current_date,
+        },
     ]
-    return jsonify(videos)
+    return web.json_response(videos)
 
-@videos_bp.route('/<video_id>', methods=['GET'])
-def get_video(video_id):
-    current_date = datetime.now()
+
+@routes.get('/{video_id}')
+async def get_video(request: web.Request):
+    video_id = request.match_info['video_id']
+    current_date = datetime.now().isoformat()
     video = {
-        "id": 1,
-        "title": "Video 1",
-        "timestamp": current_date
-      }
-    return jsonify(video)
+        "id": int(video_id),
+        "title": f"Video {video_id}",
+        "timestamp": current_date,
+    }
+    return web.json_response(video)
+
+
+def create_videos_app():
+    """
+    This replaces the Flask Blueprint.
+    Mount it as a sub-application at /api/v1/videos
+    """
+    app = web.Application()
+    app.add_routes(routes)
+    return app
