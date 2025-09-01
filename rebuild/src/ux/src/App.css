@@ -7,14 +7,40 @@
 
 .card-body {
   color: #d6ccca;
-  background-color: #0d1f35;
+  background-color: #162948;
 }
 
 .card-subtitle {
   color: #d6ccca;
-  background-color: #0d1f35;
+  background-color: #162948;
 }
 
 .btn-outline-secondary {
   color: #d6ccca;
+}
+
+/* Apply to the wrapper div */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 810px;
+  width: 1080px;
+  border: 10px solid black; /* solid black border */
+  border-radius: 20px; /* curve the corners */  
+  margin-top: 10px;
+  /* min-height: 810px;
+  min-width: 1080px; */
+}
+
+/* Navigation and Footer should size to content */
+.wrapper > :first-child,  /* Navigation */
+.wrapper > :last-child {  /* Footer */
+  flex: 0 0 auto;
+}
+
+/* Children should expand to fill remaining space */
+.wrapper > .content {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
 }

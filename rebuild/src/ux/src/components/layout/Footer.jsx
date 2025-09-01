@@ -1,6 +1,6 @@
 
-import './styles/Footer.css';
-import { version } from '../../package.json';
+import '../styles/Footer.css';
+import { version } from '../../../package.json';
 
 function Footer() {
     return (

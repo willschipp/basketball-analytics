@@ -1,5 +1,5 @@
 
-import banner from '../static/images/banner.jpg';
+import banner from '../../static/images/athloscore_banner.png';
 
 function Banner() {
     return (

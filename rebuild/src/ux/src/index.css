@@ -4,7 +4,7 @@
   font-weight: 400;
 
   color: #d6ccca; 
-  background-color: #0d1f35;
+  background-color: #162948;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -16,8 +16,21 @@
 html, body, #root {
   margin: 0 auto;
   place-items: center;
-  min-width: 80vw;
-  min-height: 100vh;
+  height: 810px;
+  width: 1080px;
+  /* max-width: 1080px;
+  max-height: 810px;
+  min-height: 810px; */
   color: #d6ccca; 
-  background-color: #0d1f35;  
+  background-color: #162948;  
 }
+
+/* @media only screen and (device-width: 1080px) and (device-height: 810px) and (orientation: landscape) {
+  body {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+} */

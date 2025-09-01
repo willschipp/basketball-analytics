@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import './styles/Videos.css';
+import '../styles/Videos.css';
 
 const VIDEO_URL = '/api/v1/videos';
 
