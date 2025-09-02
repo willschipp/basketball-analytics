@@ -77,7 +77,8 @@ async def upload_video(request: web.Request) -> web.Response:
         "id": video_id,
         "title": "",
         "timestamp": datetime.now().isoformat(),
-        "url": f"{video_id}{suffix}"
+        "url": f"{video_id}{suffix}",
+        "fileType": f"{suffix}"
     }
     dest_path = os.path.join("data",f"{video_id}{suffix}")
     shutil.copy(temp_path,dest_path) # creates a copy --> this is used for streaming back
@@ -100,7 +101,8 @@ async def upload_video(request: web.Request) -> web.Response:
     def _process():
         process(temp_path, q, video_id, frame_location, track_location, ball_location, teams_location)
     thread = threading.Thread(target=_process, daemon=True)
-    thread.start()
+    # TODO reactivate
+    thread.start() 
 
     return web.json_response({'videoId': video_id})
 

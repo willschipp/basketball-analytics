@@ -8,6 +8,7 @@ function VideoViewer() {
     const [ gameTitle,setGameTitle ] = useState("");
     const [ timestamp,setTimestamp ] = useState("");
     const [ url, setUrl ] = useState("")
+    const [ fileType, setFileType ] = useState("video/quicktime");
 
     const loadVideo = (videoId) => {
         fetch(`/api/v1/videos/${videoId}`)
@@ -17,9 +18,13 @@ function VideoViewer() {
             setTimestamp(data.timestamp);
             let url = `/api/v1/videos/${videoId}/stream`;
             setUrl(url)
-
-            console.log(data);
-            console.log(url);
+            if (data.fileType) {
+                if (data.fileType.includes("mp4")) {
+                    setFileType("video/mp4");
+                } else {
+                    setFileType("video/quicktime");
+                } //end if
+            } //end if
         });
     }
 
@@ -38,7 +43,7 @@ function VideoViewer() {
                         <div className="card p-3 text-center">
                             { (url) ? (
                                 <video controls muted playsInline autoPlay={true} width="100%" style={{ maxHeight: "400px" }}>
-                                    <source src={url} type={url.endsWith(".mp4") ? "video/mp4" : "video/quicktime"} />
+                                    <source src={url} type={fileType} />
                                     Your browser does not support the video tag.
                                 </video>
                             ) : (

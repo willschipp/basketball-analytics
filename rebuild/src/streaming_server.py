@@ -1,9 +1,9 @@
 import argparse
 import asyncio
+from datetime import datetime
 import json
 import logging
 import os
-import ssl
 import uuid
 
 import cv2
@@ -18,10 +18,6 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
-# SSL config
-ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-ssl_context.load_cert_chain(certfile='./certs/selfsigned.crt', keyfile='./certs/selfsigned.key')
-
 
 class VideoTransformTrack(MediaStreamTrack):
     kind = "video"
@@ -34,26 +30,28 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         frame = await self.track.recv()
 
-        # extract the frame to send for processing
-        # img = frame.to_ndarray(format="bgr24")
-
         return frame # without transformations
-
-
-
-# define endpoints
-# async def index(request):
-#     content = open(os.path.join(ROOT, "client/index.html"), "r").read()
-#     return web.Response(content_type="text/html", text=content)
-
-# # client endpoint
-# async def javascript(request):
-#     content = open(os.path.join(ROOT, "client/static/client.js"), "r").read()
-#     return web.Response(content_type="application/javascript", text=content)
 
 
 async def offer(request):
     params = await request.json()
+
+    # get the database and save it
+    video_id = params['video_id']    
+    # create the video object and save
+    video = {
+        "id": video_id,
+        "title": "",
+        "timestamp": datetime.now().isoformat(),
+        "url": f"{video_id}.mp4",
+        "fileType":".mp4"
+    }
+    # save
+    db = request.app["dbm"]
+    video_json = json.dumps(video)
+    await db.set(video_id,video_json) # wait for it to write
+    logger.info(f"have written {video_id} to the database file as a {video_json}")
+
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
     pc = RTCPeerConnection()
@@ -65,7 +63,7 @@ async def offer(request):
 
     log_info("Created for %s", request.remote)
 
-    recordings_dir = "./recordings"
+    recordings_dir = "./data" #changed directory
     os.makedirs(recordings_dir, exist_ok=True)
 
     output_location = os.path.join(recordings_dir, f"{params['video_id']}.mp4")
@@ -135,47 +133,11 @@ async def on_shutdown(app):
     await asyncio.gather(*coros)
     pcs.clear()
 
-def create_stream_server():
+def create_stream_server(shared_dbm):
     app = web.Application()
+    # add the database
+    app['dbm'] = shared_dbm
+    # add the routes and hooks
     app.on_shutdown.append(on_shutdown)
     app.router.add_post("/offer", offer)
     return app
-
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="WebRTC audio / video / data-channels demo"
-    )
-    parser.add_argument("--cert-file", help="SSL certificate file (for HTTPS)")
-    parser.add_argument("--key-file", help="SSL key file (for HTTPS)")
-    parser.add_argument(
-        "--host", default="0.0.0.0", help="Host for HTTP server (default: 0.0.0.0)"
-    )
-    parser.add_argument(
-        "--port", type=int, default=8080, help="Port for HTTP server (default: 8080)"
-    )
-    parser.add_argument("--record-to", help="Write received media to a file.")
-    parser.add_argument("--verbose", "-v", action="count")
-    args = parser.parse_args()
-
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-
-    # if args.cert_file:
-    # ssl_context = ssl.SSLContext()
-    # ssl_context.load_cert_chain(args.cert_file, args.key_file)
-    # else:
-    #     ssl_context = None
-
-    app = web.Application()
-    app.on_shutdown.append(on_shutdown)
-    # app.router.add_get("/", index)
-    # app.router.add_get("/static/client.js", javascript)
-    app.router.add_post("/offer", offer)
-    # app, access_log=None, host=args.host, port=args.port, ssl_context=ssl_context
-    web.run_app(
-        app, access_log=None, host="0.0.0.0", port=8443, ssl_context=ssl_context
-    )

@@ -159,34 +159,80 @@ function Streamer() {
         document.getElementById('stop').style.display = 'inline-block';
     }
 
+    function turnOffCamera() {
+        const videoElement = document.getElementById('video');
+        if (videoElement && videoElement.srcObject) {
+            let stream = videoElement.srcObject;
+            stream.getTracks().forEach(track => track.stop());
+            videoElement.pause();
+            videoElement.srcObject = null;
+            console.log('Camera turned off and video element cleared');
+        }
+
+        if (window.currentMediaStream) {
+            window.currentMediaStream.getTracks().forEach(track => track.stop());
+            window.currentMediaStream = null;
+        }
+
+        if (pc) {
+            pc.getSenders().forEach(s => s.track && s.track.stop());
+            pc.close();
+            pc = null;
+        }
+
+        if (dc) {
+            if (dcInterval) {
+                clearInterval(dcInterval);
+                dcInterval = null;
+            }
+            dc.close();
+            dc = null;
+        }
+    }
+
     function stop() {
         document.getElementById('stop').style.display = 'none';
-        document.getElementById('start').style.display = 'inline-block'; //re-expose
+        document.getElementById('start').style.display = 'inline-block'; // re-expose
 
-        // close data channel
+        // Clear the data channel interval if exists
+        if (dcInterval) {
+            clearInterval(dcInterval);
+            dcInterval = null;
+        }
+
+        // Close data channel if present
         if (dc) {
             dc.close();
+            dc = null;
         }
 
-        // close transceivers
-        if (pc.getTransceivers) {
-            pc.getTransceivers().forEach((transceiver) => {
-                if (transceiver.stop) {
-                    transceiver.stop();
+        if (pc) {
+            // Stop all transceivers if supported
+            if (pc.getTransceivers) {
+                pc.getTransceivers().forEach((transceiver) => {
+                    if (transceiver.stop) {
+                        transceiver.stop();
+                    }
+                });
+            }
+
+            // Stop all senders' tracks
+            pc.getSenders().forEach((sender) => {
+                if (sender.track) {
+                    sender.track.stop();
                 }
             });
+
+            // Finally close the peer connection
+            pc.close();
+            pc = null;
         }
 
-        // close local audio / video
-        pc.getSenders().forEach((sender) => {
-            sender.track.stop();
-        });
+        //shutdown the camera
+        turnOffCamera();
+    }    
 
-        // close peer connection
-        setTimeout(() => {
-            pc.close();
-        }, 500);
-    }
+
 
     return (
         <>

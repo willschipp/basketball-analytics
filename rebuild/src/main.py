@@ -102,7 +102,7 @@ async def create_app():
 
 
     # add the streaming server
-    app.add_subapp('/api/v1/stream',create_stream_server())
+    app.add_subapp('/api/v1/stream',create_stream_server(db))
     
     return app
 
