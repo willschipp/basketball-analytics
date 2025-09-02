@@ -5,6 +5,7 @@ from utils.frame_tools import save_frames, convert_to_frames
 from utils.file_tools import get_list
 from service.registry import update_status
 
+import janus
 import logging
 import pandas as pd
 import pickle
@@ -17,18 +18,19 @@ logger = logging.getLogger(__name__)
 team_1_class_name = "white shirt"
 team_2_class_name = "dark blue shirt"
 
-def process(video_location,video_id,frame_location="./frames.pkl",track_location="./tracks.pkl",ball_location="./ball.pkl",teams_location="./teams.pkl"):
+def process(video_location,q,video_id,frame_location="./frames.pkl",track_location="./tracks.pkl",ball_location="./ball.pkl",teams_location="./teams.pkl"):
     logging.info("starting to process video to frames")
-    update_status(video_id,"getting frames")
+    # update_status(video_id,"getting frames")
+    q.put((video_id,"getting frames"))
     # save_frames(video_location,frame_location)
     # don't save frames, just retrieve them
     frames = convert_to_frames(video_location)
     logging.info("done")
     # now start processing the players and ball tracks in parallel
-    # player_thread = threading.Thread(target=process_frames_to_tracks_stream,args=(registration_id,frame_location,track_location,teams_location,))
-    player_thread = threading.Thread(target=process_frames_array_to_tracks_stream,args=(video_id,frames,track_location,teams_location,))
-    # ball_thread = threading.Thread(target=process_frames_for_ball_stream,args=(registration_id,frame_location,ball_location,))
-    ball_thread = threading.Thread(target=process_frames_array_to_ball_stream,args=(video_id,frames,ball_location,))
+    # player_thread = threading.Thread(target=process_frames_to_tracks_stream,args=(video_id,q,frame_location,track_location,teams_location,))
+    player_thread = threading.Thread(target=process_frames_array_to_tracks_stream,args=(video_id,q,frames,track_location,teams_location,))
+    # ball_thread = threading.Thread(target=process_frames_for_ball_stream,args=(video_id,q,frame_location,ball_location,))
+    ball_thread = threading.Thread(target=process_frames_array_to_ball_stream,args=(video_id,q,frames,ball_location,))
 
     player_thread.start()
     ball_thread.start()
@@ -103,9 +105,10 @@ def process_from_files():
         #     print(f"frame-num {frame_num} k = {k} v = {v}")
 
 # process from an array
-def process_frames_array_to_tracks_stream(video_id,frames,track_location,teams_location,batch_size=20):
+def process_frames_array_to_tracks_stream(video_id,q,frames,track_location,teams_location,batch_size=20):
     logging.info("starting to process frames to player tracks...")
-    update_status(video_id,"getting players")
+    # update_status(video_id,"getting players")
+    q.put((video_id,"getting_players"))
     with open(track_location,'wb') as tracks_out, open(teams_location,'wb') as teams_out:
         for i in range(0,len(frames),batch_size):
             batch = frames[i:i + batch_size]
@@ -116,12 +119,14 @@ def process_frames_array_to_tracks_stream(video_id,frames,track_location,teams_l
             pickle.dump(assignments,teams_out)
             logger.info("written a batch")
     logging.info("...complete player tracks")
-    update_status(video_id,"complete tracks and teams")    
+    # update_status(video_id,"complete tracks and teams")    
+    q.put((video_id,"complete tracks and teams"))
 
 # process from a pickle file
-def process_frames_to_tracks_stream(video_id,frame_location,track_location,teams_location):
+def process_frames_to_tracks_stream(video_id,q,frame_location,track_location,teams_location):
     logging.info("starting to process frames to player tracks...")
-    update_status(video_id,"getting players")
+    # update_status(video_id,"getting players")
+    q.put((video_id,"getting players"))
     with open(frame_location,'rb') as frames_in, open(track_location,'wb') as tracks_out, open(teams_location,'wb') as teams_out:
         while True:
             try:
@@ -135,12 +140,14 @@ def process_frames_to_tracks_stream(video_id,frame_location,track_location,teams
             except EOFError:
                 break
     logging.info("...complete player tracks")
-    update_status(video_id,"complete tracks and teams")
+    # update_status(video_id,"complete tracks and teams")
+    q.put((video_id,"complete tracks and teams"))
 
 # process from an array
-def process_frames_array_to_ball_stream(video_id,frames,ball_location,batch_size=20):
+def process_frames_array_to_ball_stream(video_id,q,frames,ball_location,batch_size=20):
     logging.info("starting to process frames to ball tracks...")
-    update_status(video_id,"getting players")
+    # update_status(video_id,"getting players")
+    q.put((video_id,"getting players"))
     with open(ball_location,'wb') as tracks_out:
         for i in range(0,len(frames),batch_size):
             batch = frames[i:i + batch_size]
@@ -151,12 +158,14 @@ def process_frames_array_to_ball_stream(video_id,frames,ball_location,batch_size
             pickle.dump(balls,tracks_out)
             logger.info("written a batch")
     logging.info("...complete ball tracks")
-    update_status(video_id,"complete ball")  
+    # update_status(video_id,"complete ball")  
+    q.put((video_id,"complete ball"))
 
 # process from a pickle file
-def process_frames_for_ball_stream(video_id,frame_location,ball_location):
+def process_frames_for_ball_stream(video_id,q,frame_location,ball_location):
     logging.info("starting to process frames to ball tracks...")
-    update_status(video_id,"getting ball")
+    # update_status(video_id,"getting ball")
+    q.put((video_id,"getting ball"))
     with open(frame_location,'rb') as frames_in, open(ball_location,'wb') as tracks_out:
         while True:
             try:
@@ -170,5 +179,6 @@ def process_frames_for_ball_stream(video_id,frame_location,ball_location):
             except EOFError:
                 break      
     logging.info("...complete ball tracks")
-    update_status(video_id,"complete ball")
+    # update_status(video_id,"complete ball")
+    q.put((video_id,"complete ball"))
 

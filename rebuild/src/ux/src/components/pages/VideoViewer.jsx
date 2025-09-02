@@ -7,6 +7,7 @@ function VideoViewer() {
     const { videoId } = location.state || {};
     const [ gameTitle,setGameTitle ] = useState("");
     const [ timestamp,setTimestamp ] = useState("");
+    const [ url, setUrl ] = useState("")
 
     const loadVideo = (videoId) => {
         fetch(`/api/v1/videos/${videoId}`)
@@ -14,6 +15,11 @@ function VideoViewer() {
         .then(data => {
             setGameTitle(data.title);
             setTimestamp(data.timestamp);
+            let url = `/api/v1/videos/${videoId}/stream`;
+            setUrl(url)
+
+            console.log(data);
+            console.log(url);
         });
     }
 
@@ -30,10 +36,11 @@ function VideoViewer() {
                 <div className="row w-100 h-100 mt-4">
                     <div className="col-md-9 d-flex flex-column gap-3">
                         <div className="card p-3 text-center">
-                            { (videoId) ? (
-                                <>
-                                    <video controls width="100%" style={{maxHeight: '400px'}}/>
-                                </>
+                            { (url) ? (
+                                <video controls muted playsInline autoPlay={true} width="100%" style={{ maxHeight: "400px" }}>
+                                    <source src={url} type={url.endsWith(".mp4") ? "video/mp4" : "video/quicktime"} />
+                                    Your browser does not support the video tag.
+                                </video>
                             ) : (
                                 <>
                                     <h5>Video Not Found</h5>

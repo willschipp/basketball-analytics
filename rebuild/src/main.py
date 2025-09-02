@@ -15,7 +15,6 @@ from logging_config import setup_logging
 from service.processor import process, process_from_files, process_player_team
 from service.registry import save, get_by_id, load
 from service.videos import create_videos_app  
-from service.dbm_service import init_db, db_get, db_set
 from service.register import update_status, get_status, create_register_app
 
 from streaming_server import create_stream_server
@@ -92,11 +91,15 @@ async def create_app():
     # register = await init_db(app,"register","./data/register.dbm")
     register = await aiodbm.open("./data/register.dbm", "c")
 
-    # Mount videos sub-app
-    app.add_subapp('/api/v1/videos', create_videos_app(db))
-
     # add the register
-    app.add_subapp('/api/v1/status',create_register_app(register))
+    register_app = await create_register_app(register)
+    app.add_subapp('/api/v1/status',register_app)
+
+    # setup videos
+    # pass the janus queue in too
+    q = register_app['janus'].sync_q
+    app.add_subapp('/api/v1/videos', create_videos_app(db,q))
+
 
     # add the streaming server
     app.add_subapp('/api/v1/stream',create_stream_server())
