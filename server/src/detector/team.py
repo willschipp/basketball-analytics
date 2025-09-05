@@ -11,13 +11,10 @@ team_colors = {}
 player_team_dict = {}
 
 runtime_dir = os.path.dirname(os.path.abspath(__file__))
-# local_model_dir = os.path.join(runtime_dir, "patrickjohncyh/fashion-clip")
 
 model_path = os.path.join(runtime_dir, '..', 'models', 'patrickjohncyh', 'fashion-clip')
 
-# model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
 model = CLIPModel.from_pretrained(model_path)
-# processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
 processor = CLIPProcessor.from_pretrained(model_path)
 
 

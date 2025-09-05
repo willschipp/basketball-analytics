@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import { resolve } from 'path'
 import { mockDevServerPlugin } from 'vite-plugin-mock-dev-server'
 
 // https://vite.dev/config/
@@ -9,14 +9,18 @@ export default defineConfig({
     react(), 
     mockDevServerPlugin()
   ],
+  build: {
+    outDir: resolve(__dirname, '../../server/src/ux/dist'),
+    emptyOutDir: true // ensures old builds are cleared
+  },
   resolve: {
     alias: {
-      '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
+      '~bootstrap': resolve(__dirname, 'node_modules/bootstrap'),
     }
   },
   server: {
     proxy: {
-      '^/api': 'http://example.com', // This proxy prefix enables `/api` mock interception
+      '^/api': 'http://example.com',
     },
   },  
 })

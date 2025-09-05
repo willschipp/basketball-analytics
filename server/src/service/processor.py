@@ -3,7 +3,6 @@ from detector.players import detect_players
 from detector.team import get_team_assignment
 from utils.frame_tools import save_frames, convert_to_frames
 from utils.file_tools import get_list
-from service.registry import update_status
 
 import janus
 import logging
@@ -20,9 +19,7 @@ team_2_class_name = "dark blue shirt"
 
 def process(video_location,q,video_id,frame_location="./frames.pkl",track_location="./tracks.pkl",ball_location="./ball.pkl",teams_location="./teams.pkl"):
     logging.info("starting to process video to frames")
-    # update_status(video_id,"getting frames")
     q.put((video_id,"getting frames"))
-    # save_frames(video_location,frame_location)
     # don't save frames, just retrieve them
     frames = convert_to_frames(video_location)
     logging.info("done")
@@ -36,11 +33,9 @@ def process(video_location,q,video_id,frame_location="./frames.pkl",track_locati
     ball_thread.start()
 
     # logging.info("starting to process frames to player tracks")
-    # update_status(registration_id,"getting players")
     # process_frames_to_tracks_stream(frame_location,track_location,teams_location)
     # logging.info("done")
     # logging.info("starting to process frames to ball tracks")
-    # update_status(registration_id,"getting possessions")
     # process_frames_for_ball_stream(frame_location,ball_location)
     # logging.info("done")
     # now we have the ball track and player tracks, get the stats together
@@ -107,7 +102,6 @@ def process_from_files():
 # process from an array
 def process_frames_array_to_tracks_stream(video_id,q,frames,track_location,teams_location,batch_size=20):
     logging.info("starting to process frames to player tracks...")
-    # update_status(video_id,"getting players")
     q.put((video_id,"getting_players"))
     with open(track_location,'wb') as tracks_out, open(teams_location,'wb') as teams_out:
         for i in range(0,len(frames),batch_size):
@@ -118,14 +112,12 @@ def process_frames_array_to_tracks_stream(video_id,q,frames,track_location,teams
             assignments = get_team_assignment(batch,tracks,team_1_class_name,team_2_class_name)
             pickle.dump(assignments,teams_out)
             logger.info("written a batch")
-    logging.info("...complete player tracks")
-    # update_status(video_id,"complete tracks and teams")    
+    logging.info("...complete player tracks") 
     q.put((video_id,"complete tracks and teams"))
 
 # process from a pickle file
 def process_frames_to_tracks_stream(video_id,q,frame_location,track_location,teams_location):
     logging.info("starting to process frames to player tracks...")
-    # update_status(video_id,"getting players")
     q.put((video_id,"getting players"))
     with open(frame_location,'rb') as frames_in, open(track_location,'wb') as tracks_out, open(teams_location,'wb') as teams_out:
         while True:
@@ -140,7 +132,6 @@ def process_frames_to_tracks_stream(video_id,q,frame_location,track_location,tea
             except EOFError:
                 break
     logging.info("...complete player tracks")
-    # update_status(video_id,"complete tracks and teams")
     q.put((video_id,"complete tracks and teams"))
 
 # process from an array
@@ -158,13 +149,11 @@ def process_frames_array_to_ball_stream(video_id,q,frames,ball_location,batch_si
             pickle.dump(balls,tracks_out)
             logger.info("written a batch")
     logging.info("...complete ball tracks")
-    # update_status(video_id,"complete ball")  
     q.put((video_id,"complete ball"))
 
 # process from a pickle file
 def process_frames_for_ball_stream(video_id,q,frame_location,ball_location):
     logging.info("starting to process frames to ball tracks...")
-    # update_status(video_id,"getting ball")
     q.put((video_id,"getting ball"))
     with open(frame_location,'rb') as frames_in, open(ball_location,'wb') as tracks_out:
         while True:
@@ -179,6 +168,5 @@ def process_frames_for_ball_stream(video_id,q,frame_location,ball_location):
             except EOFError:
                 break      
     logging.info("...complete ball tracks")
-    # update_status(video_id,"complete ball")
     q.put((video_id,"complete ball"))
 
